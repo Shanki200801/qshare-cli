@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -28,6 +29,15 @@ var (
 )
 
 func main() {
+	// Minimal HTTP handler for Render health check
+	go func() {
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("OK"))
+		})
+		log.Println("Starting HTTP health check handler on :8080")
+		http.ListenAndServe(":8080", nil)
+	}()
 	ln, err := net.Listen("tcp", ":4000")
 	// if error, log and exit
 	if err != nil {
