@@ -13,8 +13,9 @@ var words = []string{
 }
 
 func GenerateCode() string {
-	num := rand.Intn(10)
+	num1 := rand.Intn(10) // 0-9
+	num2 := rand.Intn(10) // 0-9
 	w1 := words[rand.Intn(len(words))]
 	w2 := words[rand.Intn(len(words))]
-	return fmt.Sprintf("%d-%s-%s", num, w1, w2)
+	return fmt.Sprintf("%d-%s-%d-%s", num1, w1, num2, w2)
 }
