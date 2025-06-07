@@ -1,0 +1,39 @@
+# Binaries
+qshare
+qshare-cli
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with go test -c
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go vendor directory
+vendor/
+
+# Go module cache
+go.sum
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Relay server binary
+relay-server/relay-server
+
+# Temporary files
+*.tmp
+*.temp
