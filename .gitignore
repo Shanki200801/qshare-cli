@@ -37,3 +37,6 @@ relay-server/relay-server
 # Temporary files
 *.tmp
 *.temp
+
+#env files
+.env

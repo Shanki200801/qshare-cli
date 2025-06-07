@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/schollz/progressbar/v3"
 	"github.com/shanki200801/qshare/internal/codegen"
 	"github.com/shanki200801/qshare/internal/crypto"
@@ -14,6 +15,12 @@ import (
 )
 
 func main() {
+	godotenv.Load()
+	relayServer := os.Getenv("RELAY_SERVER")
+	if relayServer == "" {
+		relayServer = "localhost:4000"
+	}
+
 	var rootCmd = &cobra.Command{
 		Use:   "qshare",
 		Short: "qshare is a p2p file sharing CLI tool",
@@ -58,7 +65,7 @@ func main() {
 				fmt.Println("Using encryption key:", ekey)
 			}
 			// Connect to the relay server
-			conn, err := net.Dial("tcp", "localhost:4000")
+			conn, err := net.Dial("tcp", relayServer)
 			if err != nil {
 				fmt.Println("Error connecting to relay server:", err)
 				os.Exit(1)
@@ -107,7 +114,7 @@ func main() {
 			// Derive decryption key from code and ekey
 			key := crypto.DeriveKey(code, ekey)
 			// Connect to the relay server
-			conn, err := net.Dial("tcp", "localhost:4000")
+			conn, err := net.Dial("tcp", relayServer)
 			if err != nil {
 				fmt.Println("Error connecting to relay server:", err)
 				os.Exit(1)
