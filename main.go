@@ -9,7 +9,7 @@ import (
 	"github.com/shanki200801/qshare/internal/codegen"
 	"github.com/shanki200801/qshare/internal/crypto"
 	"github.com/shanki200801/qshare/internal/transfer"
-	"github.com/shanki200801/qshare/validate"
+	"github.com/shanki200801/qshare/internal/validate"
 	"github.com/spf13/cobra"
 )
 
@@ -22,16 +22,38 @@ func main() {
 	var filePath string
 	var ekey string
 	var outputPath string
+	var allowRetry bool
 
 	var sendCmd = &cobra.Command{
 		Use:   "send",
 		Short: "Send a file",
 		Run: func(comd *cobra.Command, args []string) {
-			// Validate the file exists and is not a directory
-			if err := validate.ValidateFile(filePath); err != nil {
+			info, err := os.Stat(filePath)
+			if err != nil {
 				fmt.Println("Error:", err)
 				os.Exit(1)
 			}
+			var zipped bool
+			var zipPath string
+			if info.IsDir() {
+				zipPath, err = transfer.ZipDir(filePath)
+				if err != nil {
+					fmt.Println("Error zipping directory:", err)
+					os.Exit(1)
+				}
+				filePath = zipPath
+				zipped = true
+			} else {
+				if err := validate.ValidateFile(filePath); err != nil {
+					fmt.Println("Error:", err)
+					os.Exit(1)
+				}
+			}
+			defer func() {
+				if zipped {
+					os.Remove(zipPath)
+				}
+			}()
 			if ekey != "" {
 				fmt.Println("Using encryption key:", ekey)
 			}
@@ -46,7 +68,11 @@ func main() {
 			code := codegen.GenerateCode()
 			fmt.Println("Your code is:", code)
 			// Handshake: identify as sender
-			fmt.Fprintf(conn, "%s:sender\n", code)
+			if allowRetry {
+				fmt.Fprintf(conn, "%s:sender:retry\n", code)
+			} else {
+				fmt.Fprintf(conn, "%s:sender\n", code)
+			}
 			// Derive encryption key from code and ekey
 			key := crypto.DeriveKey(code, ekey)
 			// Create a progress bar for file transfer
@@ -66,6 +92,7 @@ func main() {
 	}
 	sendCmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to the file to send")
 	sendCmd.Flags().StringVar(&ekey, "ekey", "", "Extra encryption key (must match on receive)")
+	sendCmd.Flags().BoolVarP(&allowRetry, "allowRetry", "r", false, "Allow sender to reconnect within 2 minutes if disconnected during transfer")
 	sendCmd.MarkFlagRequired("file")
 
 	var receiveCmd = &cobra.Command{
@@ -86,8 +113,8 @@ func main() {
 				os.Exit(1)
 			}
 			defer conn.Close()
-			// Handshake: identify as receiver
-			fmt.Fprintf(conn, "%s:receiver\n", code)
+			// Handshake: identify as receiver (always send :retry for best UX)
+			fmt.Fprintf(conn, "%s:receiver:retry\n", code)
 			// Use an indeterminate progress bar (file size unknown)
 			bar := progressbar.Default(-1)
 			// Receive and decrypt the file in chunks with progress bar
